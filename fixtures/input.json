@@ -1,0 +1,38 @@
+{
+  "policy": [
+    {
+      "license": "MIT",
+      "allowed": true,
+      "obligations": [
+        "notice"
+      ]
+    },
+    {
+      "license": "Apache-2.0",
+      "allowed": true,
+      "obligations": [
+        "notice",
+        "patent"
+      ]
+    },
+    {
+      "license": "GPL-3.0-only",
+      "allowed": false,
+      "obligations": []
+    }
+  ],
+  "components": [
+    {
+      "id": "core",
+      "expression": "MIT OR Apache-2.0"
+    },
+    {
+      "id": "plugin",
+      "expression": "MIT AND GPL-3.0-only"
+    },
+    {
+      "id": "tool",
+      "expression": "GPL-2.0-only WITH Classpath-exception-2.0"
+    }
+  ]
+}
