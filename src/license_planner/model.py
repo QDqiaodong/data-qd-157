@@ -1,13 +1,15 @@
 from .common import require,ident,number,rows
 from .expression import parse,alternatives
 from .release import plan_release
+from .dependency import validate_graph,audit_dependencies,COMPONENT_LIMIT,EDGE_LIMIT
 
 _MISSING=object()
+_ALLOWED_FIELDS=frozenset(('policy','components','release','dependency_graph'))
 
-def _release(data):
-    if not isinstance(data,dict) or set(data) not in ({'policy','components'},{'policy','components','release'}):
-        raise ValueError('expected object fields: policy components[ release]')
-    return data.get('release',_MISSING)
+def _shape(data):
+    if not isinstance(data,dict) or not set(data)<=_ALLOWED_FIELDS or 'policy' not in data or 'components' not in data:
+        raise ValueError('expected object fields: policy components[ release][ dependency_graph]')
+    return data.get('release',_MISSING),data.get('dependency_graph',_MISSING)
 
 def _costs(release,allowed_obligations):
     require(release,'obligation_costs')
@@ -21,7 +23,8 @@ def _costs(release,allowed_obligations):
     return costs
 
 def analyze(data):
-    release=_release(data)
+    release,graph_value=_shape(data)
+    has_graph=graph_value is not _MISSING
     policy={}
     for r in rows(data['policy'],200):
         require(r,'license allowed obligations');key=ident(r['license']);tree=parse(key)
@@ -32,8 +35,14 @@ def analyze(data):
     obligations=sorted(set().union(*(duties for allowed,duties in policy.values() if allowed)))
     costs=None if release is _MISSING else _costs(release,set(obligations))
     if costs is not None and len(obligations)>16:raise ValueError('too many policy obligations for release')
+    if costs is not None:
+        component_limit=120
+    elif has_graph:
+        component_limit=COMPONENT_LIMIT
+    else:
+        component_limit=1000
     components=[];seen=set()
-    for r in rows(data['components'],120 if costs is not None else 1000):
+    for r in rows(data['components'],component_limit):
         require(r,'id expression');cid=ident(r['id'])
         if cid in seen:raise ValueError('duplicate component')
         seen.add(cid);choices=alternatives(parse(r['expression']));permitted=[];rejected=[]
@@ -53,4 +62,8 @@ def analyze(data):
             options=[(sum(1<<bit[x] for x in option['obligations']),len(option['licenses']),tuple(option['licenses']),tuple(option['obligations'])) for option in c['alternatives']]
             described.append({'id':c['id'],'status':c['status'],'options':options})
         result['release_plan']=plan_release(described,costs,obligations)
+    if has_graph:
+        roots,edges=validate_graph(graph_value,seen)
+        blocked={c['id'] for c in components if c['status']!='allowed'}
+        result['dependency_audit']=audit_dependencies(roots,edges,blocked,seen)
     return result
