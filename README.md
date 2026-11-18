@@ -59,6 +59,24 @@ python3 -m venv .venv
 alias 上限 200 万，独立子进程实测峰值 RSS 低于 128 MiB（SQLite 磁盘索引 + 紧凑整数
 并查集 + 流式分组/序列化）。任何输入错误退出 2 且旧报告逐字节保留。
 
+### 离线层叠交付物清单审计（layers）
+
+第五条与旧模式互斥的 CLI 链路：`--layers FILE --output REPORT`。只读取调用方给出的
+文件元数据，不读取镜像、压缩包或真实文件内容；所有路径在虚拟目录树中解释。按有序
+层的 whiteout/opaque 删除、目录与文件安装、硬链接绑定语义重建最终可见文件树，再只对
+实际暴露的组件复用单组件 `analyze` 的许可与 selected 规则，并以最终可见文件的声明
+SHA256 判定义务材料是否满足。组件身份始终使用调用方给定 id。完整字段、路径契约、
+删除/覆盖/链接语义与输出结构见 [layers 契约](docs/contract.md#离线层叠交付物清单审计layers)。
+
+```sh
+.venv/bin/license-planner --layers fixtures/layers.json \
+  --output run/layers-report.json
+```
+
+任何输入错误退出 2 并逐字节保留旧报告；许可阻断或材料缺失是正常业务结果，退出 0。
+实现用逐层物化的不可变对象身份（sha256/component/origin 固化）与显式栈链接解析，
+10000 级前向硬链接链不依赖递归；规模用例为 128 层、39001 个最终文件、60001 条操作。
+
 本地已有wheel时，安装构建工具可加 `--no-index --find-links <公共wheel缓存目录>`。
 修改源码后重新安装。本仓不共享其他仓环境，不依赖Docker、外部账号或持续服务。
 
@@ -69,7 +87,8 @@ alias 上限 200 万，独立子进程实测峰值 RSS 低于 128 MiB（SQLite �
 
 src/license_planner/model.py 为业务模型；release.py 为交付批次共享义务的精确求解器；dependency.py 为供应图单点瓶颈审计（即时支配者与支配树子树）；expression.py 为SPDX表达式；reconcile.py 为跨版本谱系对账（最小费用最大流与三分类）；
 warehouse.py 为可修订观测的 SQLite 时段事实仓（版本决议、物化状态区间与按日积分，单事务原子提交）；
-common.py 提供受限JSON及报告发布，cli.py 衔接三条互斥数据链路。fixtures 为明确自制样例，代码与样例采用MIT许可。
+layers.py 为离线层叠交付物清单审计（虚拟目录树、删除/覆盖/硬链接语义与义务材料可见性）；
+common.py 提供受限JSON及报告发布，cli.py 衔接五条互斥数据链路。fixtures 为明确自制样例，代码与样例采用MIT许可。
 
 ## 业务与样例
 

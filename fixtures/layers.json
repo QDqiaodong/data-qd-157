@@ -1,0 +1,96 @@
+{
+  "policy": [
+    {
+      "license": "MIT",
+      "allowed": true,
+      "obligations": [
+        "notice"
+      ]
+    },
+    {
+      "license": "GPL-3.0-only",
+      "allowed": false,
+      "obligations": []
+    }
+  ],
+  "components": [
+    {
+      "id": "a",
+      "expression": "MIT"
+    },
+    {
+      "id": "retired",
+      "expression": "GPL-3.0-only"
+    }
+  ],
+  "materials": [
+    {
+      "obligation": "notice",
+      "sha256": "5eec3defa62576871bec73ac53f44d8bc3ed903c6618d1c954af84a3c36b0267"
+    }
+  ],
+  "layers": [
+    {
+      "id": "base",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "bin/a",
+          "sha256": "f71f560397def88a084e5d26f2d28c4788a23c4a5289d35d0ec090ebcfb0919f",
+          "component": "a"
+        },
+        {
+          "kind": "file",
+          "path": "doc/n",
+          "sha256": "5eec3defa62576871bec73ac53f44d8bc3ed903c6618d1c954af84a3c36b0267",
+          "component": null
+        }
+      ]
+    },
+    {
+      "id": "links",
+      "entries": [
+        {
+          "kind": "hardlink",
+          "path": "bin/b",
+          "target": "bin/a"
+        },
+        {
+          "kind": "hardlink",
+          "path": "doc/saved",
+          "target": "doc/n"
+        }
+      ]
+    },
+    {
+      "id": "replace-doc",
+      "entries": [
+        {
+          "kind": "whiteout",
+          "path": "bin/a"
+        },
+        {
+          "kind": "file",
+          "path": "doc/n",
+          "sha256": "cb48cd75a6b9791049b7c1f57c4030fd7ff6d815572c040e5e2abb3d122f3239",
+          "component": null
+        }
+      ]
+    },
+    {
+      "id": "opaque-doc",
+      "entries": [
+        {
+          "kind": "opaque",
+          "path": "doc"
+        },
+        {
+          "kind": "file",
+          "path": "doc/n",
+          "sha256": "cb48cd75a6b9791049b7c1f57c4030fd7ff6d815572c040e5e2abb3d122f3239",
+          "component": null
+        }
+      ]
+    }
+  ]
+}

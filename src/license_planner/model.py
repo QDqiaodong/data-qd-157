@@ -10,6 +10,46 @@ _ALLOWED_FIELDS=frozenset(('policy','components','release','dependency_graph','r
 _BASELINE_POLICY_LIMIT=200
 _BASELINE_OBLIGATION_LIMIT=50
 
+def read_policy(value):
+    """Validate a caller policy exactly like the baseline analysis.
+
+    Returns ``{licence: (allowed, obligations_set)}``.  A policy key must be
+    one atomic SPDX licence id or "ID WITH Exception"; WITH never inherits
+    the base licence.  ``allowed`` is a strict bool and obligations are
+    unique identifiers.
+    """
+    policy={}
+    for r in rows(value,_BASELINE_POLICY_LIMIT):
+        require(r,'license allowed obligations');key=ident(r['license']);tree=parse(key)
+        if tree!=('license',key) or key in policy or type(r['allowed']) is not bool:raise ValueError('invalid policy key/allow flag')
+        obligations=[ident(x) for x in rows(r['obligations'],_BASELINE_OBLIGATION_LIMIT)]
+        if len(set(obligations))!=len(obligations):raise ValueError('duplicate obligation')
+        policy[key]=(r['allowed'],set(obligations))
+    return policy
+
+def license_outcome(policy,expression):
+    """Return ``(status, selected, permitted, rejected)`` for one expression.
+
+    This is the single-component baseline meaning used by both ``analyze``
+    and the layered delivery audit: unknown or explicitly disallowed licences
+    block an alternative, permitted alternatives carry the union of their
+    obligations, and ``selected`` is the permitted alternative with the
+    fewest obligations, then fewest licences, then lexicographically smallest
+    licence list.
+    """
+    return license_outcome_choices(policy,alternatives(parse(expression)))
+
+def license_outcome_choices(policy,choices):
+    permitted=[];rejected=[]
+    for choice in sorted(choices,key=lambda s:tuple(sorted(s))):
+        blocked=sorted(k for k in choice if k not in policy or not policy[k][0])
+        if blocked:rejected.append({'licenses':sorted(choice),'blocked_or_unknown':blocked});continue
+        duties=set().union(*(policy[k][1] for k in choice))
+        permitted.append({'licenses':sorted(choice),'obligations':sorted(duties)})
+    permitted.sort(key=lambda x:(len(x['obligations']),len(x['licenses']),x['licenses']))
+    return ('allowed' if permitted else 'blocked',
+            permitted[0] if permitted else None,permitted,rejected)
+
 def _baseline_side(reconciliation):
     """Validate reconciliation.baseline and return its per-component status.
 
@@ -24,14 +64,7 @@ def _baseline_side(reconciliation):
     baseline=reconciliation['baseline']
     if not isinstance(baseline,dict) or set(baseline)!={'policy','components'}:
         raise ValueError('reconciliation baseline must contain exactly policy and components')
-    policy={}
-    for r in rows(baseline['policy'],_BASELINE_POLICY_LIMIT):
-        require(r,'license allowed obligations');key=ident(r['license']);tree=parse(key)
-        if tree!=('license',key) or key in policy or type(r['allowed']) is not bool:
-            raise ValueError('invalid policy key/allow flag')
-        obligations=[ident(x) for x in rows(r['obligations'],_BASELINE_OBLIGATION_LIMIT)]
-        if len(set(obligations))!=len(obligations):raise ValueError('duplicate obligation')
-        policy[key]=(r['allowed'],set(obligations))
+    policy=read_policy(baseline['policy'])
     legacy={}
     for r in rows(baseline['components'],BASELINE_COMPONENT_LIMIT):
         if not isinstance(r,dict) or set(r)!={'id','expression'}:
@@ -71,13 +104,7 @@ def analyze(data):
     release,graph_value,reconciliation_value=_shape(data)
     has_graph=graph_value is not _MISSING
     has_reconciliation=reconciliation_value is not _MISSING
-    policy={}
-    for r in rows(data['policy'],200):
-        require(r,'license allowed obligations');key=ident(r['license']);tree=parse(key)
-        if tree!=('license',key) or key in policy or type(r['allowed']) is not bool:raise ValueError('invalid policy key/allow flag')
-        obligations=[ident(x) for x in rows(r['obligations'],50)]
-        if len(set(obligations))!=len(obligations):raise ValueError('duplicate obligation')
-        policy[key]=(r['allowed'],set(obligations))
+    policy=read_policy(data['policy'])
     obligations=sorted(set().union(*(duties for allowed,duties in policy.values() if allowed)))
     costs=None if release is _MISSING else _costs(release,set(obligations))
     if costs is not None and len(obligations)>16:raise ValueError('too many policy obligations for release')
@@ -93,14 +120,8 @@ def analyze(data):
     for r in rows(data['components'],component_limit):
         require(r,'id expression');cid=ident(r['id'])
         if cid in seen:raise ValueError('duplicate component')
-        seen.add(cid);choices=alternatives(parse(r['expression']));permitted=[];rejected=[]
-        for choice in sorted(choices,key=lambda s:tuple(sorted(s))):
-            blocked=sorted(k for k in choice if k not in policy or not policy[k][0])
-            if blocked:rejected.append({'licenses':sorted(choice),'blocked_or_unknown':blocked});continue
-            duties=set().union(*(policy[k][1] for k in choice))
-            permitted.append({'licenses':sorted(choice),'obligations':sorted(duties)})
-        permitted.sort(key=lambda x:(len(x['obligations']),len(x['licenses']),x['licenses']))
-        components.append({'id':cid,'status':'allowed' if permitted else 'blocked','selected':permitted[0] if permitted else None,'alternatives':permitted,'rejected':rejected})
+        seen.add(cid);status,selected,permitted,rejected=license_outcome(policy,r['expression'])
+        components.append({'id':cid,'status':status,'selected':selected,'alternatives':permitted,'rejected':rejected})
     components.sort(key=lambda c:c['id'])
     result={'compliant':all(c['status']=='allowed' for c in components),'components':components}
     if costs is not None:

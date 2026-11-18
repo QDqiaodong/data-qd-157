@@ -5,5 +5,7 @@
 - release-blocked.json：含被禁/未知许可的阻断组件，批次 status=blocked。
 - dependency-audit.json：多根供应图（roots=s,t），含 a↔b 有向环与 d→c 旁路，仅 a 为 blocked；孤立 u 仅在 unreachable，a 的 lost_count=2、c 无支配者。
 - dependency-audit-no-bypass.json：在上一样例上删除旁路边 d→c；c 改由 a 支配，a 的 lost_count=3。
+- layers.json：四层镜像式交付，演示 whiteout/opaque、硬链接绑定与义务材料缺失（compliant=false）。
+- layers-recreated.json：同层 whiteout 后重建同路文件，证明删除标记不删除本层新内容。
 - reconciliation.json：新旧两版各有同名与改名组件；四组 forced 迁移、一组等成本二选一（legacy-old 对 legacy-a/legacy-b 均 possible 且无 transition），匹配数5、penalty总和6。
 

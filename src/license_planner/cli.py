@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .common import read, save
 from .inventory import run_inventory
+from .layers import audit as audit_layers
 from .model import analyze
 from .warehouse import import_observations, open_warehouse, window_report
 
@@ -14,6 +15,12 @@ def run(source):
     data, digest = read(source)
     return {'schema_version': 1, 'source_sha256': digest,
             'result': analyze(data)}
+
+
+def run_layers(source):
+    data, digest = read(source)
+    return {'schema_version': 1, 'source_sha256': digest,
+            'result': audit_layers(data)}
 
 
 def _distinct_paths(paths):
@@ -29,6 +36,13 @@ def _mode(args):
     has_observations = args.observations is not None
     has_window = args.window is not None
     has_inventory = args.inventory is not None
+    has_layers = args.layers is not None
+    if has_layers:
+        if (has_source or has_warehouse or has_observations or has_window
+                or has_inventory or not has_output):
+            raise ValueError(
+                'layers mode requires exactly --layers and --output')
+        return 'layers'
     if has_inventory:
         if (has_source or has_warehouse or has_observations or has_window
                 or not has_output):
@@ -55,7 +69,8 @@ def _mode(args):
         return 'window'
     raise ValueError(
         'choose --source/--output, --warehouse/--observations, '
-        '--warehouse/--window/--output or --inventory/--output')
+        '--warehouse/--window/--output, --inventory/--output or '
+        '--layers/--output')
 
 
 def _run_import(args):
@@ -89,12 +104,19 @@ def main():
     parser.add_argument('--observations', type=Path)
     parser.add_argument('--window', type=Path)
     parser.add_argument('--inventory', type=Path)
+    parser.add_argument('--layers', type=Path)
     args = parser.parse_args()
     try:
         mode = _mode(args)
         if mode == 'legacy':
             _distinct_paths([args.source, args.output])
             report = run(args.source)
+            save(args.output, report)
+            print(json.dumps(report, sort_keys=True, ensure_ascii=False,
+                             allow_nan=False))
+        elif mode == 'layers':
+            _distinct_paths([args.layers, args.output])
+            report = run_layers(args.layers)
             save(args.output, report)
             print(json.dumps(report, sort_keys=True, ensure_ascii=False,
                              allow_nan=False))
