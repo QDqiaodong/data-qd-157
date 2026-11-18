@@ -1,0 +1,42 @@
+{
+  "policy": [
+    {"license": "MIT", "allowed": true, "obligations": ["notice"]},
+    {"license": "Apache-2.0", "allowed": true, "obligations": ["notice", "patent"]},
+    {"license": "GPL-3.0-only", "allowed": false, "obligations": []}
+  ],
+  "components": [
+    {"id": "core", "expression": "MIT"},
+    {"id": "plugin", "expression": "MIT OR Apache-2.0"},
+    {"id": "vendor", "expression": "GPL-3.0-only"},
+    {"id": "retired", "expression": "MIT"},
+    {"id": "legacy-a", "expression": "MIT"},
+    {"id": "legacy-b", "expression": "Apache-2.0"}
+  ],
+  "reconciliation": {
+    "baseline": {
+      "policy": [
+        {"license": "MIT", "allowed": true, "obligations": ["notice"]},
+        {"license": "Apache-2.0", "allowed": false, "obligations": []},
+        {"license": "GPL-3.0-only", "allowed": false, "obligations": []}
+      ],
+      "components": [
+        {"id": "core-old", "expression": "MIT"},
+        {"id": "plugin-old", "expression": "Apache-2.0"},
+        {"id": "vendor-old", "expression": "GPL-3.0-only"},
+        {"id": "ghost", "expression": "MIT"},
+        {"id": "legacy-old", "expression": "MIT"}
+      ]
+    },
+    "links": [
+      {"baseline_id": "core-old", "current_id": "core", "penalty": 0},
+      {"baseline_id": "core-old", "current_id": "plugin", "penalty": 4},
+      {"baseline_id": "plugin-old", "current_id": "core", "penalty": 4},
+      {"baseline_id": "plugin-old", "current_id": "plugin", "penalty": 1},
+      {"baseline_id": "vendor-old", "current_id": "vendor", "penalty": 2},
+      {"baseline_id": "vendor-old", "current_id": "retired", "penalty": 9},
+      {"baseline_id": "ghost", "current_id": "retired", "penalty": 3},
+      {"baseline_id": "legacy-old", "current_id": "legacy-a", "penalty": 0},
+      {"baseline_id": "legacy-old", "current_id": "legacy-b", "penalty": 0}
+    ]
+  }
+}

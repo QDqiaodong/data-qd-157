@@ -16,6 +16,7 @@ python3 -m venv .venv
 .venv/bin/license-planner --source fixtures/release.json --output run/release-report.json
 .venv/bin/license-planner --source fixtures/release-blocked.json --output run/release-blocked-report.json
 .venv/bin/license-planner --source fixtures/dependency-audit.json --output run/dependency-report.json
+.venv/bin/license-planner --source fixtures/reconciliation.json --output run/reconciliation-report.json
 .venv/bin/python -m unittest discover -s tests -v
 ```
 
@@ -27,7 +28,7 @@ python3 -m venv .venv
 输入和输出不得相同，输出符号链接拒绝。单操作者批处理，不承诺并发发布或断电恢复。
 同输入重跑不累加。测试使用临时目录，运行产物在忽略的run/。
 
-src/license_planner/model.py 为业务模型；release.py 为交付批次共享义务的精确求解器；dependency.py 为供应图单点瓶颈审计（即时支配者与支配树子树）；expression.py 为SPDX表达式；
+src/license_planner/model.py 为业务模型；release.py 为交付批次共享义务的精确求解器；dependency.py 为供应图单点瓶颈审计（即时支配者与支配树子树）；expression.py 为SPDX表达式；reconcile.py 为跨版本谱系对账（最小费用最大流与三分类）；
 common.py 提供受限JSON及报告发布，cli.py 衔接数据链路。fixtures 为明确自制样例，代码与样例采用MIT许可。
 
 ## 业务与样例
@@ -49,3 +50,15 @@ common.py 提供受限JSON及报告发布，cli.py 衔接数据链路。fixtures
 fixtures/input.json 为旧样例（compliant=false）；fixtures/release.json 为 allowed 批次（total_cost=3）；
 fixtures/release-blocked.json 为阻断批次；fixtures/dependency-audit.json 与
 fixtures/dependency-audit-no-bypass.json 演示旁路如何改变支配关系与 lost_count。成本是调用方提供的工作量数据，不作许可证法律判断。
+
+可选 reconciliation 恰好包含 baseline 与 links：baseline 表示此前版本的 policy/components（复用同一
+SPDX 与策略契约，最多1000条，不得嵌套其他分析），links 为 baseline_id→current_id 的候选对应及
+0..1000000000 整数 penalty（最多12000条、拒绝 bool/重复配对/未知引用，两侧同名ID不自动配对）。
+存在 reconciliation 时当前组件同样最多1000条，且仍受 release 等更小上限约束。result.reconciliation_audit
+先精确最大化匹配对数、再精确最小化 penalty 总和，并把每条输入边在**全部**最优匹配上分类为
+forced/possible/excluded，另给出两侧必定未配对记录；transitions 只为 forced 边输出两侧既有
+allowed/blocked 状态，绝不把歧义配对当作确定迁移。匹配只由候选边与 penalty 决定，不受许可状态影响。
+
+fixtures/reconciliation.json 演示该对账：四组 forced 迁移、一组等成本二选一（legacy-old 的两条边均为
+possible 且不进入 transitions），匹配数5、penalty总和6。实现用一次最小费用最大流加零约简费用残余图的
+强连通分量精确分类，不对每条边重解匹配，800×800、6100 边的规模用例在单进程内完成。
