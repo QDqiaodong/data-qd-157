@@ -1,0 +1,82 @@
+{
+  "policy": [
+    {
+      "license": "MIT",
+      "allowed": true,
+      "obligations": [
+        "notice"
+      ]
+    },
+    {
+      "license": "GPL-3.0-only",
+      "allowed": false,
+      "obligations": []
+    }
+  ],
+  "components": [
+    {
+      "id": "s",
+      "expression": "MIT"
+    },
+    {
+      "id": "t",
+      "expression": "MIT"
+    },
+    {
+      "id": "a",
+      "expression": "GPL-3.0-only"
+    },
+    {
+      "id": "b",
+      "expression": "MIT"
+    },
+    {
+      "id": "c",
+      "expression": "MIT"
+    },
+    {
+      "id": "d",
+      "expression": "MIT"
+    },
+    {
+      "id": "u",
+      "expression": "MIT"
+    }
+  ],
+  "dependency_graph": {
+    "roots": [
+      "s",
+      "t"
+    ],
+    "edges": [
+      {
+        "dependency": "s",
+        "dependent": "a"
+      },
+      {
+        "dependency": "t",
+        "dependent": "a"
+      },
+      {
+        "dependency": "a",
+        "dependent": "b"
+      },
+      {
+        "dependency": "b",
+        "dependent": "a"
+      },
+      {
+        "dependency": "a",
+        "dependent": "c"
+      },
+      {
+        "dependency": "b",
+        "dependent": "c"
+      },
+      {
+        "dependency": "t",
+        "dependent": "d"
+      }
+    ]
+  }
+}
