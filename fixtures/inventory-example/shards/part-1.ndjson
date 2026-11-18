@@ -1,0 +1,6 @@
+{"kind":"claim","source":"osv","id":"acme-http","expression":"MIT OR Apache-2.0"}
+{"kind":"claim","source":"clearlydefined","id":"acme-http","expression":"MIT OR BSD-3-Clause"}
+
+{"kind":"claim","source":"osv","id":"acme-json","expression":"MIT"}
+{"kind":"claim","source":"internal-sbom","id":"json-lib","expression":"MIT OR GPL-3.0-only"}
+{"kind":"claim","source":"osv","id":"legacy-parser","expression":"Obsoleteware-1.0"}

@@ -1,0 +1,12 @@
+{
+  "policy": [
+    {"license": "MIT", "allowed": true, "obligations": ["notice"]},
+    {"license": "Apache-2.0", "allowed": true, "obligations": ["notice", "patent"]},
+    {"license": "BSD-3-Clause", "allowed": true, "obligations": []},
+    {"license": "GPL-3.0-only", "allowed": false, "obligations": []}
+  ],
+  "files": [
+    "shards/part-1.ndjson",
+    "shards/part-2.ndjson"
+  ]
+}
