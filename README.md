@@ -20,6 +20,27 @@ python3 -m venv .venv
 .venv/bin/python -m unittest discover -s tests -v
 ```
 
+### 可修订许可观测时段事实仓（warehouse）
+
+三个 CLI 模式互斥。warehouse 模式把调用方提供的版本化观测写入本地 SQLite，持久维护
+与当前生效观测等价的组件状态区间，并按 UTC 自然日分摊 allowed/blocked/unknown 秒数；
+完整数据契约见 [warehouse 契约](docs/warehouse.md)。
+
+```sh
+.venv/bin/license-planner --warehouse run/demo.db \
+  --observations fixtures/warehouse-observations.json
+.venv/bin/license-planner --warehouse run/demo.db \
+  --observations fixtures/warehouse-corrections.json
+.venv/bin/license-planner --warehouse run/demo.db \
+  --window fixtures/warehouse-window.json --output run/window-report.json
+```
+
+导入成功仅向 stdout 输出回执（`schema_version`、`source_sha256`、`generation`、
+`inserted`、`duplicates`），不接受 `--output`；窗口查询原子发布报告，查询不会创建
+数据库。观测状态由现有 `analyze` 单组件判定计算，调用方不能直接给 status；
+`component_id` 始终显式提供，仓内不推断谱系。版本乱序、迟到旧版本、同刻候选回退、
+跨日更正与全撤回 unknown 均有测试覆盖；规模用例为 20000 组件 / 200000 版本。
+
 本地已有wheel时，安装构建工具可加 `--no-index --find-links <公共wheel缓存目录>`。
 修改源码后重新安装。本仓不共享其他仓环境，不依赖Docker、外部账号或持续服务。
 
@@ -29,7 +50,8 @@ python3 -m venv .venv
 同输入重跑不累加。测试使用临时目录，运行产物在忽略的run/。
 
 src/license_planner/model.py 为业务模型；release.py 为交付批次共享义务的精确求解器；dependency.py 为供应图单点瓶颈审计（即时支配者与支配树子树）；expression.py 为SPDX表达式；reconcile.py 为跨版本谱系对账（最小费用最大流与三分类）；
-common.py 提供受限JSON及报告发布，cli.py 衔接数据链路。fixtures 为明确自制样例，代码与样例采用MIT许可。
+warehouse.py 为可修订观测的 SQLite 时段事实仓（版本决议、物化状态区间与按日积分，单事务原子提交）；
+common.py 提供受限JSON及报告发布，cli.py 衔接三条互斥数据链路。fixtures 为明确自制样例，代码与样例采用MIT许可。
 
 ## 业务与样例
 

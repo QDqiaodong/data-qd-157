@@ -43,3 +43,7 @@ lost_count、支配关系与阻断证据来自同一张完整供应图的同一�
 样例input.json中core选择MIT与notice，plugin被GPL禁止，tool因WITH完整键未知而阻断，因此compliant=false。release.json为allowed批次（core与lib共享notice，tool需reciprocal，total_cost=3）。release-blocked.json含阻断组件，批次status=blocked。dependency-audit.json为多根、含a↔b环与d→c旁路的供应图，仅a为blocked：a的immediate_dominator为null且lost_count=2，b的immediate_dominator与nearest_blocked_dominator均为a，c因旁路而无支配者，孤立u仅出现在unreachable，CLI退出0。dependency-audit-no-bypass.json删除d→c旁路后，c的immediate_dominator与nearest_blocked_dominator变为a，a的lost_count变为3。reconciliation.json演示跨版本谱系：core-old→core、plugin-old→plugin、vendor-old→vendor、ghost→retired为forced，legacy-old对legacy-a/legacy-b为等成本二选一故两条均possible且不进入transitions；匹配数为5、penalty总和为6，四组forced迁移展示allowed与blocked状态变化（含两侧同为allowed/blocked的情形）。业务阻断是正常结果；语法错误、未知引用、重复root/边/配对、成本或罚分输入错误或超限才退出2并逐字节保留旧报告。
 
 源字节SHA256随结果保留，输入JSON最多8MB、拒绝重复键与非有限数值及未定义字段；输出成功后原子替换。无网络扫描、源码许可证发现或法律效力认定；成本为调用方提供的工作量数据，不作许可证法律判断。
+
+## 可修订许可观测 SQLite 时段事实仓（warehouse）
+
+另有两个与旧单次分析互斥的 CLI 模式：`--warehouse DB --observations FILE` 导入可修订观测，`--warehouse DB --window FILE --output REPORT` 输出按 UTC 自然日分摊的 allowed/blocked/unknown 秒数。其完整字段、版本决议、事务与存储契约见 [warehouse.md](warehouse.md)。要点：`(event_id,revision)` 为不可变版本键，仅每事件最大 revision 生效，最大版本为 retract 时事件不提供状态，旧版本不复活；同组件同 effective_at 取 event_id 字典序最大者，撤回后次大者显露；状态半开 `[a,b)` 延续，最早观测之前与全撤回之后均为 unknown 且组件不消失。事实、组件目录、物化区间与 generation 在单个 SQLite 事务内提交，失败整批回滚；窗口查询只读持久区间与组件目录，不重演版本历史。
