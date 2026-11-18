@@ -47,3 +47,7 @@ lost_count、支配关系与阻断证据来自同一张完整供应图的同一�
 ## 可修订许可观测 SQLite 时段事实仓（warehouse）
 
 另有两个与旧单次分析互斥的 CLI 模式：`--warehouse DB --observations FILE` 导入可修订观测，`--warehouse DB --window FILE --output REPORT` 输出按 UTC 自然日分摊的 allowed/blocked/unknown 秒数。其完整字段、版本决议、事务与存储契约见 [warehouse.md](warehouse.md)。要点：`(event_id,revision)` 为不可变版本键，仅每事件最大 revision 生效，最大版本为 retract 时事件不提供状态，旧版本不复活；同组件同 effective_at 取 event_id 字典序最大者，撤回后次大者显露；状态半开 `[a,b)` 延续，最早观测之前与全撤回之后均为 unknown 且组件不消失。事实、组件目录、物化区间与 generation 在单个 SQLite 事务内提交，失败整批回滚；窗口查询只读持久区间与组件目录，不重演版本历史。
+
+## 离线多源许可清单归并（inventory）
+
+另有第四个互斥 CLI 模式 `--inventory MANIFEST --output REPORT`：MANIFEST 恰含 policy 与 files（相对清单目录的 NDJSON 分片，最多 64 个），分片每行为 claim（source/id/expression）或 alias（left/right 端点对象）。身份按 `(source,id)` 二元组比较，无向别名传递闭包决定实体（键为最小端点）；实体共识是全部成员完整候选族的精确交集，不做并集、不先按 policy 过滤；共识为空才是 conflict，并按端点降序逐试删除给出不可再删证据核，blocked（许可未知/禁止但共识非空）与 conflict 严格区分。报告为原子替换的 UTF-8 NDJSON（header 摘要 + 排序 group/member 行）。分片总字节按原始字节计上限 2 GiB、单行 65536 字节、claim 100 万、alias 200 万，单进程峰值 RSS 不超过 128 MiB；完整契约、删除核定义、外存设计与验收证据见 [inventory.md](inventory.md)。

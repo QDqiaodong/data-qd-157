@@ -41,6 +41,24 @@ python3 -m venv .venv
 `component_id` 始终显式提供，仓内不推断谱系。版本乱序、迟到旧版本、同刻候选回退、
 跨日更正与全撤回 unknown 均有测试覆盖；规模用例为 20000 组件 / 200000 版本。
 
+### 离线多源许可清单归并（inventory）
+
+第四条与旧模式互斥的 CLI 链路：调用方在 MANIFEST 中给出 policy 与最多 64 个 NDJSON
+分片（claim 与确定性 alias 边），管道按无向别名传递闭包归并跨文件组件身份，输出每个
+实体的许可精确交集共识，以及共识为空时不可再删的冲突证据核；不推断身份匹配、不访问
+网络、不作法律判断。完整字段、删除核程序、外存设计与 RSS 约束见
+[inventory 契约](docs/inventory.md)。
+
+```sh
+.venv/bin/license-planner --inventory fixtures/inventory-example/manifest.json \
+  --output run/inventory-report.ndjson
+```
+
+输出是原子替换的 UTF-8 NDJSON（header + 按实体键排序的 group/member 行）；stdout 仅
+打印小型计数回执。分片按原始字节计上限 2 GiB、单行 65536 字节；claim 上限 100 万、
+alias 上限 200 万，独立子进程实测峰值 RSS 低于 128 MiB（SQLite 磁盘索引 + 紧凑整数
+并查集 + 流式分组/序列化）。任何输入错误退出 2 且旧报告逐字节保留。
+
 本地已有wheel时，安装构建工具可加 `--no-index --find-links <公共wheel缓存目录>`。
 修改源码后重新安装。本仓不共享其他仓环境，不依赖Docker、外部账号或持续服务。
 

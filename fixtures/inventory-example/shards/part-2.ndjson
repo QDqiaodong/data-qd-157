@@ -1,0 +1,4 @@
+{"kind":"claim","source":"vendor","id":"http-client","expression":"Apache-2.0 OR BSD-3-Clause"}
+{"kind":"alias","left":{"source":"osv","id":"acme-http"},"right":{"source":"clearlydefined","id":"acme-http"}}
+{"kind":"alias","left":{"source":"clearlydefined","id":"acme-http"},"right":{"source":"vendor","id":"http-client"}}
+{"kind":"alias","left":{"source":"osv","id":"acme-json"},"right":{"source":"internal-sbom","id":"json-lib"}}
