@@ -13,6 +13,8 @@ python3 -m venv .venv
 .venv/bin/python -m pip install --no-build-isolation --no-deps .
 .venv/bin/python -m pip check
 .venv/bin/license-planner --source fixtures/input.json --output run/report.json
+.venv/bin/license-planner --source fixtures/release.json --output run/release-report.json
+.venv/bin/license-planner --source fixtures/release-blocked.json --output run/release-blocked-report.json
 .venv/bin/python -m unittest discover -s tests -v
 ```
 
@@ -24,13 +26,18 @@ python3 -m venv .venv
 输入和输出不得相同，输出符号链接拒绝。单操作者批处理，不承诺并发发布或断电恢复。
 同输入重跑不累加。测试使用临时目录，运行产物在忽略的run/。
 
-src/license_planner/model.py 为业务模型，相关算法模块独立组织；common.py 提供受限JSON及报告发布，
-cli.py 衔接数据链路。fixtures 为明确自制样例，代码与样例采用MIT许可。
+src/license_planner/model.py 为业务模型；release.py 为交付批次共享义务的精确求解器；expression.py 为SPDX表达式；
+common.py 提供受限JSON及报告发布，cli.py 衔接数据链路。fixtures 为明确自制样例，代码与样例采用MIT许可。
 
 ## 业务与样例
 
-# Caller-policy SPDX expression choices v1
-软件交付整理者输入policy与components。policy的license为单许可证ID或“ID WITH ExceptionID”，allowed严格布尔、obligations唯一字符串；最多200条。component恰含唯一id及expression，最多1000个。
-解析大小写敏感的ID、WITH、括号、AND、OR，优先级WITH>AND>OR，WITH只能紧跟许可证ID。许可证ID语法支持字母数字点加号连字符。不是完整SPDX文档解析、许可证目录认证或法律建议；WITH为完整独立政策键，绝不自动继承基础许可。
-AND合并所需许可，OR保留可选集合；每节点最多256集合，AND笛卡尔积最多4096，否则整批拒绝。未知或显式禁止的许可阻断该路径。允许路径义务取并集；选义务数最少、许可数最少、许可列表字典序最小者。逐组件提供所有许可选择、拒绝原因、选中义务，不承诺跨组件全局义务最小化。
-样例core选择MIT与notice，plugin被GPL禁止，tool因WITH完整键未知而阻断，因此compliant=false；业务阻断是正常结果，语法错误才退出2。无网络扫描、源码许可证发现或法律效力认定。
+详见 [数据契约](docs/contract.md)。要点：策略与表达式规则同前；可选 release 只含 obligation_costs，
+必须不重不漏覆盖 allowed=true 义务的去重集合（最多16种），cost 为 0..1000000000 整数。release 模式最多120个组件。
+
+同一义务只准备一份材料，按四级字典序精确最小化：义务并集成本和、义务种数、各组件许可数之和、
+按组件id升序的许可列表序列。结果在 result.release_plan 中给出 selections 与按义务汇总的 obligations 证据；
+任一组件被阻断时整个批次 status=blocked，不输出部分计划（CLI 仍退出0）。有 release 时旧 components.selected
+仍按旧规则计算，不改变既有输出。无 release 时结果结构与值保持原样。
+
+fixtures/input.json 为旧样例（compliant=false）；fixtures/release.json 为 allowed 批次（total_cost=3）；
+fixtures/release-blocked.json 为阻断批次。成本是调用方提供的工作量数据，不作许可证法律判断。

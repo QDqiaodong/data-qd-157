@@ -1,0 +1,60 @@
+{
+  "policy": [
+    {
+      "license": "MIT",
+      "allowed": true,
+      "obligations": [
+        "notice"
+      ]
+    },
+    {
+      "license": "Apache-2.0",
+      "allowed": true,
+      "obligations": [
+        "patent"
+      ]
+    },
+    {
+      "license": "EPL-2.0",
+      "allowed": true,
+      "obligations": [
+        "reciprocal"
+      ]
+    },
+    {
+      "license": "GPL-3.0-only",
+      "allowed": false,
+      "obligations": []
+    }
+  ],
+  "components": [
+    {
+      "id": "core",
+      "expression": "MIT OR Apache-2.0"
+    },
+    {
+      "id": "lib",
+      "expression": "MIT OR Apache-2.0"
+    },
+    {
+      "id": "tool",
+      "expression": "EPL-2.0"
+    }
+  ],
+  "release": {
+    "obligation_costs": [
+      {
+        "obligation": "notice",
+        "cost": 2
+      },
+      {
+        "obligation": "patent",
+        "cost": 5
+      },
+      {
+        "obligation": "reciprocal",
+        "cost": 1
+      }
+    ]
+  }
+}
